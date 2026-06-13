@@ -2,12 +2,29 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+
 const supabase = require("./supabase");
+
+const paymentRoutes = require("./routes/paymentRoutes");
+
+const {
+  sendReservationEmail,
+} = require("./services/emailService");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+/* =========================
+   PAYMENT ROUTES
+========================= */
+
+app.use("/api/payment", paymentRoutes);
+
+/* =========================
+   HOME
+========================= */
 
 app.get("/", (req, res) => {
   res.send("Restaurant Reservation API Running...");
@@ -18,15 +35,22 @@ app.get("/", (req, res) => {
 ========================= */
 
 app.get("/api/restaurants", async (req, res) => {
-  const { data, error } = await supabase
-    .from("restaurants")
-    .select("*");
+  try {
+    const { data, error } = await supabase
+      .from("restaurants")
+      .select("*");
 
-  if (error) {
-    return res.status(500).json(error);
+    if (error) {
+      return res.status(500).json(error);
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
-
-  res.json(data);
 });
 
 /* =========================
@@ -34,15 +58,22 @@ app.get("/api/restaurants", async (req, res) => {
 ========================= */
 
 app.get("/api/menus", async (req, res) => {
-  const { data, error } = await supabase
-    .from("menus")
-    .select("*");
+  try {
+    const { data, error } = await supabase
+      .from("menus")
+      .select("*");
 
-  if (error) {
-    return res.status(500).json(error);
+    if (error) {
+      return res.status(500).json(error);
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
-
-  res.json(data);
 });
 
 /* =========================
@@ -50,32 +81,46 @@ app.get("/api/menus", async (req, res) => {
 ========================= */
 
 app.get("/api/users", async (req, res) => {
-  const { data, error } = await supabase
-    .from("users")
-    .select("*");
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*");
 
-  if (error) {
-    return res.status(500).json(error);
+    if (error) {
+      return res.status(500).json(error);
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
-
-  res.json(data);
 });
 
 /* =========================
-   RESERVATIONS
+   GET RESERVATIONS
 ========================= */
 
 app.get("/api/reservations", async (req, res) => {
-  const { data, error } = await supabase
-    .from("reservations")
-    .select("*")
-    .order("id", { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from("reservations")
+      .select("*")
+      .order("id", { ascending: true });
 
-  if (error) {
-    return res.status(500).json(error);
+    if (error) {
+      return res.status(500).json(error);
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
-
-  res.json(data);
 });
 
 /* =========================
@@ -109,11 +154,38 @@ app.post("/api/reservations", async (req, res) => {
 
     if (error) {
       console.log(error);
-      return res.status(500).json(error);
+
+      return res.status(500).json({
+        success: false,
+        error,
+      });
     }
+
+    let restaurantName = "Restaurant";
+
+    if (Number(restaurant_id) === 1) {
+      restaurantName = "Food Paradise";
+    }
+
+    if (Number(restaurant_id) === 2) {
+      restaurantName = "Barbeque Nation";
+    }
+
+    if (Number(restaurant_id) === 3) {
+      restaurantName = "Domino's Pizza";
+    }
+
+    await sendReservationEmail(
+      process.env.EMAIL_USER,
+      restaurantName,
+      reservation_date,
+      reservation_time,
+      guests
+    );
 
     res.json({
       success: true,
+      message: "Reservation Created Successfully",
       data,
     });
   } catch (err) {
@@ -140,8 +212,10 @@ app.delete("/api/reservations/:id", async (req, res) => {
       .eq("id", id);
 
     if (error) {
-      console.log(error);
-      return res.status(500).json(error);
+      return res.status(500).json({
+        success: false,
+        error,
+      });
     }
 
     res.json({
@@ -149,14 +223,16 @@ app.delete("/api/reservations/:id", async (req, res) => {
       message: "Reservation Cancelled Successfully",
     });
   } catch (err) {
-    console.log(err);
-
     res.status(500).json({
       success: false,
       message: err.message,
     });
   }
 });
+
+/* =========================
+   START SERVER
+========================= */
 
 const PORT = process.env.PORT || 5000;
 

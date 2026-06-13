@@ -19,6 +19,11 @@ function Navbar() {
       <Link to="/dashboard">
         👤 Dashboard
       </Link>
+
+      <Link to="/admin">
+        👩‍💼 Admin      
+      </Link>
+
     </nav>
   );
 }

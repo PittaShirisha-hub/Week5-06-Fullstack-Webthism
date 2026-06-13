@@ -52,6 +52,16 @@ function ReservationPage() {
         return;
       }
 
+      localStorage.setItem(
+        "reservation",
+        JSON.stringify({
+          restaurant: form.restaurant,
+          date: form.date,
+          time: form.time,
+          guests: form.guests,
+        })
+      );
+
       alert("Reservation Saved Successfully!");
 
       setForm({
@@ -61,7 +71,7 @@ function ReservationPage() {
         guests: "",
       });
 
-      window.location.href = "/dashboard";
+      window.location.href = "/payment";
     } catch (error) {
       console.log(error);
       alert("Server Error");
